@@ -3,20 +3,26 @@ server:
 
 spring:
   application:
-    name: pam-asset-transparency
+    name: frequency-risk-indicator-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/proton6
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:h2:mem:proton6
+    username: mayank
+    password: mayank
+    driver-class-name: org.h2.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
+    database-platform: org.hibernate.dialect.H2Dialect
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        format_sql: true
+#        use_sql_comments: true
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
 weather:
   url: https://api.weatherapi.com/v1

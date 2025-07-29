@@ -32,4 +32,16 @@ public class GridConfigModel {
     @Column(name = "grid_type")
     private String gridType;
 
+    @Column(name = "wind_mill_count")
+    private Integer windMillCount;
+
+    @Column(name = "solar_panel_count")
+    private Integer solarPanelCount;
+
+    @Column(name = "grid_capacity")
+    private Double gridCapacity; // in MW (MegaWatts)
+
+    @Column(name = "grid_status")
+    private String gridStatus; // e.g., "active", "inactive", "maintenance"
+
 }

@@ -4,6 +4,7 @@ import com.siemens.proton.hackx.model.GridConfigModel;
 import com.siemens.proton.hackx.response.APIResponse;
 import com.siemens.proton.hackx.service.FrequencyRiskService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,10 +16,18 @@ public class GridConfigController {
     private FrequencyRiskService frequencyRiskService;
 
     @PostMapping("/grid/config")
-    public ResponseEntity<APIResponse> gridConfiguration(@RequestBody GridConfigModel gridConfigRequest) {
-        // This method will interact with the WeatherService to fetch weather data for the given location.
-        // It will return a ResponseEntity containing the APIResponse with the weather data.
-        return ResponseEntity.ok(frequencyRiskService.gridConfiguration(gridConfigRequest));
+    public ResponseEntity<APIResponse> createGridConfiguration(@RequestBody GridConfigModel gridConfigRequest) {
+        // This method will handle the creation of a new grid configuration.
+        APIResponse response = frequencyRiskService.gridConfiguration(gridConfigRequest);
+        return ResponseEntity.status(response.getStatus())
+                .body(response);
+    }
+
+    @PutMapping("/grid/config")
+    public ResponseEntity<APIResponse> updateGridConfiguration(@RequestBody GridConfigModel gridConfigRequest) {
+        // This method will handle the creation of a new grid configuration.
+        APIResponse response = frequencyRiskService.updateGridConfiguration(gridConfigRequest);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @GetMapping("/grid/config/{id}")

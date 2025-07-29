@@ -11,4 +11,6 @@ public interface FrequencyRiskService {
     APIResponse getGridConfiguration(Integer id);
 
     APIResponse getAllGridConfigurations();
+
+    APIResponse updateGridConfiguration(GridConfigModel gridConfigRequest);
 }

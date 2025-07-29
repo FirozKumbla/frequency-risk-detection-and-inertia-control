@@ -1,6 +1,5 @@
 package com.siemens.proton.hackx.service.impl;
 
-import com.siemens.proton.hackx.repository.FrequencyRiskRepository;
 import com.siemens.proton.hackx.model.GridConfigModel;
 import com.siemens.proton.hackx.repository.GridConfigRepository;
 import com.siemens.proton.hackx.response.APIResponse;
@@ -53,12 +52,19 @@ public class FrequencyRiskServiceImpl implements FrequencyRiskService {
 
     @Override
     public APIResponse gridConfiguration(GridConfigModel gridConfigRequest) {
-        gridConfigRequest = gridConfigRepository.save(gridConfigRequest);
-        return APIResponse.builder()
-                .status(201)
-                .message("Grid configuration saved successfully")
-                .data(gridConfigRequest)
-                .build();
+        try {
+            gridConfigRequest = gridConfigRepository.save(gridConfigRequest);
+            return APIResponse.builder()
+                    .status(201)
+                    .message("Grid configuration saved successfully")
+                    .data(gridConfigRequest)
+                    .build();
+        } catch (Exception e) {
+            return APIResponse.builder()
+                    .status(500)
+                    .message("Failed to save grid configuration: " + e.getMessage())
+                    .build();
+        }
     }
 
     @Override
@@ -80,5 +86,28 @@ public class FrequencyRiskServiceImpl implements FrequencyRiskService {
                 .message("All grid configurations retrieved successfully")
                 .data(gridConfigs)
                 .build();
+    }
+
+    @Override
+    public APIResponse updateGridConfiguration(GridConfigModel gridConfigRequest) {
+        try {
+            if (gridConfigRequest.getId() == null || !gridConfigRepository.existsById(gridConfigRequest.getId())) {
+                return APIResponse.builder()
+                        .status(404)
+                        .message("Grid configuration not found with id: " + gridConfigRequest.getId())
+                        .build();
+            }
+            gridConfigRequest = gridConfigRepository.save(gridConfigRequest);
+            return APIResponse.builder()
+                    .status(204)
+                    .message("Grid configuration updated successfully")
+                    .data(gridConfigRequest)
+                    .build();
+        } catch (Exception e) {
+            return APIResponse.builder()
+                    .status(500)
+                    .message("Failed to update grid configuration: " + e.getMessage())
+                    .build();
+        }
     }
 }
