@@ -1,8 +1,10 @@
 package com.siemens.proton.hackx.controller;
 
 import com.siemens.proton.hackx.model.GridConfigModel;
+import com.siemens.proton.hackx.model.GridPowerDTO;
 import com.siemens.proton.hackx.response.APIResponse;
 import com.siemens.proton.hackx.service.FrequencyRiskService;
+import com.siemens.proton.hackx.service.GridPowerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,8 @@ public class GridConfigController {
 
     @Autowired
     private FrequencyRiskService frequencyRiskService;
+    @Autowired
+    private GridPowerService gridPowerService;
 
     @PostMapping("/grid/config")
     public ResponseEntity<APIResponse> createGridConfiguration(@RequestBody GridConfigModel gridConfigRequest) {
@@ -43,5 +47,13 @@ public class GridConfigController {
         // It will return a ResponseEntity containing the APIResponse with the list of grid configurations.
         return ResponseEntity.ok(frequencyRiskService.getAllGridConfigurations());
     }
+
+    @GetMapping("/grid/power/lat/{latitude}/long/{longitude}")
+    public ResponseEntity<GridPowerDTO> getGridPowerAndFrequency(@PathVariable("latitude") String latitude,
+                                                     @PathVariable("longitude") String longitude) {
+        // This method will fetch incoming power to the grid
+        return ResponseEntity.ok(gridPowerService.getIncomingPowerToGrid(latitude, longitude));
+    }
+
 
 }
