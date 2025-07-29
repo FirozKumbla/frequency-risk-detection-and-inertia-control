@@ -1,7 +1,10 @@
 package com.siemens.proton.hackx.service.impl;
 
+import com.siemens.proton.hackx.repository.FrequencyRiskRepository;
+import com.siemens.proton.hackx.model.GridConfigModel;
+import com.siemens.proton.hackx.repository.GridConfigRepository;
 import com.siemens.proton.hackx.response.APIResponse;
-import com.siemens.proton.hackx.service.WeatherService;
+import com.siemens.proton.hackx.service.FrequencyRiskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -18,7 +21,7 @@ import java.util.Map;
 import static com.siemens.proton.hackx.constant.ApplicationConstant.*;
 
 @Service
-public class WeatherServiceImpl implements WeatherService {
+public class FrequencyRiskServiceImpl implements FrequencyRiskService {
 
     @Value("${weather.url}")
     private String weatherUrl;
@@ -26,7 +29,8 @@ public class WeatherServiceImpl implements WeatherService {
     @Autowired
     private RestTemplate restTemplate;
 
-
+    @Autowired
+    private GridConfigRepository gridConfigRepository;
 
     @Override
     public APIResponse getWeatherData(String latitude, String longitude) {
@@ -44,6 +48,37 @@ public class WeatherServiceImpl implements WeatherService {
         return APIResponse.builder()
                 .status(response.getStatusCode().value())
                 .message("Failed to fetch weather data")
+                .build();
+    }
+
+    @Override
+    public APIResponse gridConfiguration(GridConfigModel gridConfigRequest) {
+        gridConfigRequest = gridConfigRepository.save(gridConfigRequest);
+        return APIResponse.builder()
+                .status(201)
+                .message("Grid configuration saved successfully")
+                .data(gridConfigRequest)
+                .build();
+    }
+
+    @Override
+    public APIResponse getGridConfiguration(Integer id) {
+        GridConfigModel gridConfig = gridConfigRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Grid configuration not found with id: " + id));
+        return APIResponse.builder()
+                .status(200)
+                .message("Grid configuration retrieved successfully")
+                .data(gridConfig)
+                .build();
+    }
+
+    @Override
+    public APIResponse getAllGridConfigurations() {
+        Iterable<GridConfigModel> gridConfigs = gridConfigRepository.findAll();
+        return APIResponse.builder()
+                .status(200)
+                .message("All grid configurations retrieved successfully")
+                .data(gridConfigs)
                 .build();
     }
 }

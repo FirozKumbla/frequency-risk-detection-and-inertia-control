@@ -1,7 +1,7 @@
 package com.siemens.proton.hackx.controller;
 
 import com.siemens.proton.hackx.response.APIResponse;
-import com.siemens.proton.hackx.service.WeatherService;
+import com.siemens.proton.hackx.service.FrequencyRiskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +14,7 @@ public class WeatherController {
 
 
     @Autowired
-    private WeatherService weatherService;
+    private FrequencyRiskService weatherService;
 
     // This class will handle HTTP requests related to weather data.
     // It will use the WeatherService to fetch and return weather information.
