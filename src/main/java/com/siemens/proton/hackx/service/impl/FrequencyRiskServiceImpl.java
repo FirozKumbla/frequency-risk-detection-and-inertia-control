@@ -1,6 +1,6 @@
 package com.siemens.proton.hackx.service.impl;
 
-import com.siemens.proton.hackx.model.GridConfigModel;
+import com.siemens.proton.hackx.model.LocationConfigModel;
 import com.siemens.proton.hackx.repository.GridConfigRepository;
 import com.siemens.proton.hackx.response.APIResponse;
 import com.siemens.proton.hackx.service.FrequencyRiskService;
@@ -51,7 +51,7 @@ public class FrequencyRiskServiceImpl implements FrequencyRiskService {
     }
 
     @Override
-    public APIResponse gridConfiguration(GridConfigModel gridConfigRequest) {
+    public APIResponse gridConfiguration(LocationConfigModel gridConfigRequest) {
         try {
             gridConfigRequest = gridConfigRepository.save(gridConfigRequest);
             return APIResponse.builder()
@@ -69,7 +69,7 @@ public class FrequencyRiskServiceImpl implements FrequencyRiskService {
 
     @Override
     public APIResponse getGridConfiguration(Integer id) {
-        GridConfigModel gridConfig = gridConfigRepository.findById(id)
+        LocationConfigModel gridConfig = gridConfigRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Grid configuration not found with id: " + id));
         return APIResponse.builder()
                 .status(200)
@@ -80,7 +80,7 @@ public class FrequencyRiskServiceImpl implements FrequencyRiskService {
 
     @Override
     public APIResponse getAllGridConfigurations() {
-        Iterable<GridConfigModel> gridConfigs = gridConfigRepository.findAll();
+        Iterable<LocationConfigModel> gridConfigs = gridConfigRepository.findAll();
         return APIResponse.builder()
                 .status(200)
                 .message("All grid configurations retrieved successfully")
@@ -89,7 +89,7 @@ public class FrequencyRiskServiceImpl implements FrequencyRiskService {
     }
 
     @Override
-    public APIResponse updateGridConfiguration(GridConfigModel gridConfigRequest) {
+    public APIResponse updateGridConfiguration(LocationConfigModel gridConfigRequest) {
         try {
             if (gridConfigRequest.getId() == null || !gridConfigRepository.existsById(gridConfigRequest.getId())) {
                 return APIResponse.builder()
