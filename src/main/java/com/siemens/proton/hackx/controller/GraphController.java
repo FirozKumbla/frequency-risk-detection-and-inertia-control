@@ -27,8 +27,8 @@ public class GraphController {
 
     // Example method to fetch graph data
      @GetMapping("/graph")
-     public ResponseEntity<APIResponse> getGraphData(String latitude, String longitude) {
-         return ResponseEntity.ok(graphService.getGraphData(latitude, longitude));
+     public ResponseEntity<APIResponse> getGraphData(int locationId, int days) {
+         return ResponseEntity.ok(graphService.getGraphData(locationId, days));
      }
 
 
