@@ -136,7 +136,7 @@ public class GraphServcieImpl implements GraphServcie {
         }
 
         HttpEntity entity = new HttpEntity(requestBody, new HttpHeaders() {{
-            set("Authorization", "Bearer " + AI_API_KEY);
+            set("Authorization", "Bearer " + PRE_FIX_API+AI_API_KEY);
             set("Content-Type", "application/json");
         }});
         ResponseEntity<String> predectedResponse = restTemplate.exchange("https://api.groq.com/openai/v1/chat/completions", HttpMethod.POST, entity, new ParameterizedTypeReference<String>() {
