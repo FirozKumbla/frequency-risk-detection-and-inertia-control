@@ -17,6 +17,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
 import java.util.*;
 
 import static com.siemens.proton.hackx.constant.ApplicationConstant.*;
@@ -104,10 +109,55 @@ public class GraphServcieImpl implements GraphServcie {
                         "windEnergy", windGraph,
                         "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
                 ));
+
+                System.out.println(getPredication(graphData));
+
             }
             return graphData;
         }
 
         return Collections.emptyMap();
+    }
+
+
+    public String getPredication(Map<String, Map<String, List<DataDto>>> graphData) {
+
+        String GROK_API_KEY = "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";
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", "llama-3.3-70b-versatile");
+        requestBody.put("messages", List.of(
+                Map.of("role", "system", "content", "You are a helpful assistant that provides energy predictions based on solar and wind data."),
+                Map.of("role", "user", "content", "Given this input, predict frequency dips, RoCoF, grid health and inertia need and provide the response in the given List of FreqPredictionDTO class public class FreqPredictionDTO { private String timestamp; private double predictedFreq; private double rocOfFreq; private String gridHealth; private boolean syntheticInertiaRequired; private boolean triggerControlCommand; } format without any additional text: " + graphData)
+        ));
+
+        try {
+            disableSSLVerification();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        HttpEntity entity = new HttpEntity(requestBody, new HttpHeaders() {{
+            set("Authorization", "Bearer " + GROK_API_KEY);
+            set("Content-Type", "application/json");
+        }});
+        ResponseEntity<String> predectedResponse = restTemplate.exchange("https://api.groq.com/openai/v1/chat/completions", HttpMethod.POST, entity, new ParameterizedTypeReference<String>() {
+        });
+        return predectedResponse.getBody();
+    }
+
+    private void disableSSLVerification() throws Exception {
+        TrustManager[] trustAllCerts = new TrustManager[]{
+                new X509TrustManager() {
+                    public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                }
+        };
+        SSLContext sc = SSLContext.getInstance("SSL");
+        sc.init(null, trustAllCerts, new java.security.SecureRandom());
+        HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+        // Disable host name verification
+        HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
     }
 }
