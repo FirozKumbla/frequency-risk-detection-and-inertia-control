@@ -32,6 +32,12 @@ public class GraphServcieImpl implements GraphServcie {
     @Value("${weather.url}")
     private String weatherUrl;
 
+    @Value("${gork.url}")
+    private String gorkUrl;
+
+    @Value("${gork.key}")
+    private String apiKey;
+
     @Autowired
     private RestTemplate restTemplate;
 
@@ -125,7 +131,7 @@ public class GraphServcieImpl implements GraphServcie {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");
         requestBody.put("messages", List.of(
-                Map.of("role", "system", "content", "You are a helpful assistant that provides energy predictions based on solar and wind data."),
+               // Map.of("role", "system", "content", "You are a helpful assistant that provides energy predictions based on solar and wind data."),
                 Map.of("role", "user", "content", "Given this input, predict frequency dips, RoCoF, grid health and inertia need and provide the response in the given List of FreqPredictionDTO class public class FreqPredictionDTO { private String timestamp; private double predictedFreq; private double rocOfFreq; private String gridHealth; private boolean syntheticInertiaRequired; private boolean triggerControlCommand; } format without any additional text: " + graphData)
         ));
 
@@ -136,10 +142,10 @@ public class GraphServcieImpl implements GraphServcie {
         }
 
         HttpEntity entity = new HttpEntity(requestBody, new HttpHeaders() {{
-            set("Authorization", "Bearer " + PRE_FIX_API+AI_API_KEY);
+            set("Authorization", "Bearer " + apiKey);
             set("Content-Type", "application/json");
         }});
-        ResponseEntity<String> predectedResponse = restTemplate.exchange("https://api.groq.com/openai/v1/chat/completions", HttpMethod.POST, entity, new ParameterizedTypeReference<String>() {
+        ResponseEntity<String> predectedResponse = restTemplate.exchange(gorkUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<String>() {
         });
         return predectedResponse.getBody();
     }

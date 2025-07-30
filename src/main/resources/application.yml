@@ -26,3 +26,7 @@ spring:
 
 weather:
   url: https://api.weatherapi.com/v1
+
+gork:
+  url: https://api.groq.com/openai/v1/chat/completions
+  key: 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
