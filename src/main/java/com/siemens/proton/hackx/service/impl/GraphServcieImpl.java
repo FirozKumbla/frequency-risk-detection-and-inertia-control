@@ -5,7 +5,7 @@ import com.siemens.proton.hackx.response.APIResponse;
 import com.siemens.proton.hackx.response.DataDto;
 import com.siemens.proton.hackx.service.FrequencyRiskService;
 import com.siemens.proton.hackx.service.GraphServcie;
-import org.h2.util.json.JSONArray;
+import com.siemens.proton.hackx.util.UtilMethods;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -33,11 +33,8 @@ public class GraphServcieImpl implements GraphServcie {
     @Autowired
     private FrequencyRiskService frequencyRiskService;
 
-
-    // Constants
-    private static final double RATED_POWER_PER_PANEL = 300.0; // in Watts
-    private static final double TEMP_DERATE_PER_C = 0.005;
-    private static final double MAX_UV_INDEX = 12.0;
+    @Autowired
+    private UtilMethods utilMethods;
 
     @Override
     public APIResponse getGraphData(int locationId, int days) {
@@ -87,6 +84,7 @@ public class GraphServcieImpl implements GraphServcie {
                 List<Double> hourlyTemps = new ArrayList<>();
                 List<Double> uvIndex = new ArrayList<>();
                 List<String> timeStamps = new ArrayList<>();
+                List<Double> windSpeeds = new ArrayList<>();
 
                 // Assuming the hourly data is available in the "hour" key
                 List<Map<String, Object>> hourlyData = (List<Map<String, Object>>) day.get("hour");
@@ -94,50 +92,20 @@ public class GraphServcieImpl implements GraphServcie {
                     hourlyTemps.add((Double) hour.get("temp_c"));
                     uvIndex.add(Double.valueOf(hour.get("uv").toString()));
                     timeStamps.add((String) hour.get("time"));
+                    windSpeeds.add(Double.valueOf(hour.get("wind_kph").toString()));
                 }
 
                 // Calculate solar energy output
-                List<DataDto> dataDtos = calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
-                graphData.put(date, Collections.singletonMap("solarEnergy", dataDtos));
+                List<DataDto> solarGraph = utilMethods.calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
+                List<DataDto> windGraph = utilMethods.calculateWindPower(windSpeeds, config.getWindMillCount(), timeStamps);
+                graphData.put(date, Map.of(
+                        "solarEnergy", solarGraph,
+                        "windEnergy", windGraph
+                ));
             }
             return graphData;
         }
 
         return Collections.emptyMap();
-    }
-
-
-    public static List<DataDto> calculateSolarEnergy(List<Double> hourlyTemps,
-                                                 List<Double> uvIndex,
-                                                 int numberOfPanels,
-                                                 List<String> timeStamps) {
-        Map<String, Double> energyOutput = new LinkedHashMap<>();
-        List<DataDto> dataDtos = new LinkedList<>();
-
-        for (int i = 0; i < hourlyTemps.size(); i++) {
-            DataDto dataDto = new DataDto();
-            double tempC = hourlyTemps.get(i);
-            double uv = uvIndex.get(i);
-            String time = timeStamps.get(i);
-
-            // No derating if temperature ≤ 25°C
-            double derateFactor = (tempC <= 25) ? 1.0 : (1 - TEMP_DERATE_PER_C * (tempC - 25));
-            double effectivePowerPerPanel = RATED_POWER_PER_PANEL * derateFactor;
-
-            // Scale power based on UV index
-            double outputPerPanel = effectivePowerPerPanel * (uv / MAX_UV_INDEX);
-
-            // Total power output for all panels
-            double totalOutput = outputPerPanel * numberOfPanels;
-
-            // Round to 2 decimal places
-            energyOutput.put(time, Math.round(totalOutput * 100.0) / 100.0);
-            dataDto.setTime(time);
-            dataDto.setValue(Math.round(totalOutput * 100.0) / 100.0);
-
-            dataDtos.add(dataDto);
-        }
-
-        return dataDtos;
     }
 }

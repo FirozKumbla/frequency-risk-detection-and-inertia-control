@@ -4,57 +4,78 @@ import com.siemens.proton.hackx.model.LocationConfigModel;
 import com.siemens.proton.hackx.response.DataDto;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class UtilMethods {
 
-    public Map<String, Map<String, List<DataDto>>> calculateWindPower(Map<String, Object> weatherData, LocationConfigModel config) {
-        Integer numOfWindTurbines = config.getWindMillCount();
-        Map<String, Map<String, List<DataDto>>> windPowerData = new LinkedHashMap<>();
-        Map<String, List<DataDto>> dataMap = new LinkedHashMap<>();
-        List<DataDto> resultList = new ArrayList<>();
+    private static final double RATED_POWER_PER_PANEL = 300.0; // in Watts
+    private static final double TEMP_DERATE_PER_C = 0.005;
+    private static final double MAX_UV_INDEX = 12.0;
 
+    public List<DataDto> calculateWindPower(List<Double> windSpeeds, int numOfWindTurbines, List<String> timeStamps) {
+        Map<String, Map<String, List<DataDto>>> windPowerData = new LinkedHashMap<>();
         // Wind turbine constants
         double ratedPowerKW = 2000.0; // 2 MW in kW
         double cutIn = 3.5;
         double rated = 13.0;
         double cutOut = 25.0;
 
-        Map<String, Object> data = (Map<String, Object>) weatherData.get("data");
-        Map<String, Object> forecast = (Map<String, Object>) data.get("forecast");
-        List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecast.get("forecastday");
+        List<DataDto> hourlyList = new ArrayList<>();
 
-        for (Map<String, Object> day : forecastDays) {
-            String date = (String) day.get("date");
-            List<Map<String, Object>> hours = (List<Map<String, Object>>) day.get("hour");
+        for (int i = 0; i < windSpeeds.size(); i++) {
+            String time = timeStamps.get(i);
+            double windKph = windSpeeds.get(i);
+            double windSpeed = windKph / 3.6; // Convert kph to m/s
 
-            List<DataDto> hourlyList = new ArrayList<>();
-
-            for (Map<String, Object> hourData : hours) {
-                String time = (String) hourData.get("time");
-                double windKph = ((Number) hourData.get("wind_kph")).doubleValue();
-                double windSpeed = windKph / 3.6; // Convert kph to m/s
-
-                double powerPerTurbine;
-                if (windSpeed < cutIn || windSpeed > cutOut) {
-                    powerPerTurbine = 0;
-                } else if (windSpeed < rated) {
-                    powerPerTurbine = ratedPowerKW * Math.pow((windSpeed - cutIn) / (rated - cutIn), 3);
-                } else {
-                    powerPerTurbine = ratedPowerKW;
-                }
-
-                double totalPower = powerPerTurbine * numOfWindTurbines;
-                hourlyList.add(new DataDto(time, totalPower));
+            double powerPerTurbine;
+            if (windSpeed < cutIn || windSpeed > cutOut) {
+                powerPerTurbine = 0;
+            } else if (windSpeed < rated) {
+                powerPerTurbine = ratedPowerKW * Math.pow((windSpeed - cutIn) / (rated - cutIn), 3);
+            } else {
+                powerPerTurbine = ratedPowerKW;
             }
-            dataMap.put(date, hourlyList);
+
+            double totalPower = powerPerTurbine * numOfWindTurbines;
+            hourlyList.add(new DataDto(time, totalPower));
         }
-        windPowerData.put("windPower", dataMap);
-        return windPowerData;
+
+        return hourlyList;
+    }
+
+    public List<DataDto> calculateSolarEnergy(List<Double> hourlyTemps,
+                                                     List<Double> uvIndex,
+                                                     int numberOfPanels,
+                                                     List<String> timeStamps) {
+        Map<String, Double> energyOutput = new LinkedHashMap<>();
+        List<DataDto> dataDtos = new LinkedList<>();
+
+        for (int i = 0; i < hourlyTemps.size(); i++) {
+            DataDto dataDto = new DataDto();
+            double tempC = hourlyTemps.get(i);
+            double uv = uvIndex.get(i);
+            String time = timeStamps.get(i);
+
+            // No derating if temperature ≤ 25°C
+            double derateFactor = (tempC <= 25) ? 1.0 : (1 - TEMP_DERATE_PER_C * (tempC - 25));
+            double effectivePowerPerPanel = RATED_POWER_PER_PANEL * derateFactor;
+
+            // Scale power based on UV index
+            double outputPerPanel = effectivePowerPerPanel * (uv / MAX_UV_INDEX);
+
+            // Total power output for all panels
+            double totalOutput = outputPerPanel * numberOfPanels;
+
+            // Round to 2 decimal places
+            energyOutput.put(time, Math.round(totalOutput * 100.0) / 100.0);
+            dataDto.setTime(time);
+            dataDto.setValue(Math.round(totalOutput * 100.0) / 100.0);
+
+            dataDtos.add(dataDto);
+        }
+
+        return dataDtos;
     }
 
 }
