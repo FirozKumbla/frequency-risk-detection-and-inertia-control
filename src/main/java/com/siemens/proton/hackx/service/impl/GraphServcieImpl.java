@@ -122,7 +122,6 @@ public class GraphServcieImpl implements GraphServcie {
 
     public String getPredication(Map<String, Map<String, List<DataDto>>> graphData) {
 
-        String GROK_API_KEY = "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";
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.3-70b-versatile");
         requestBody.put("messages", List.of(
@@ -137,7 +136,7 @@ public class GraphServcieImpl implements GraphServcie {
         }
 
         HttpEntity entity = new HttpEntity(requestBody, new HttpHeaders() {{
-            set("Authorization", "Bearer " + GROK_API_KEY);
+            set("Authorization", "Bearer " + AI_API_KEY);
             set("Content-Type", "application/json");
         }});
         ResponseEntity<String> predectedResponse = restTemplate.exchange("https://api.groq.com/openai/v1/chat/completions", HttpMethod.POST, entity, new ParameterizedTypeReference<String>() {
