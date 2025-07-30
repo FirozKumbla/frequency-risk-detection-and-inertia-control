@@ -45,9 +45,9 @@ public class UtilMethods {
     }
 
     public List<DataDto> calculateSolarEnergy(List<Double> hourlyTemps,
-                                                     List<Double> uvIndex,
-                                                     int numberOfPanels,
-                                                     List<String> timeStamps) {
+                                              List<Double> uvIndex,
+                                              int numberOfPanels,
+                                              List<String> timeStamps) {
         Map<String, Double> energyOutput = new LinkedHashMap<>();
         List<DataDto> dataDtos = new LinkedList<>();
 
@@ -76,6 +76,18 @@ public class UtilMethods {
         }
 
         return dataDtos;
+    }
+
+    public List<DataDto> getTotalPowerGraph(List<String> timeStamps, List<DataDto> solarGraph, List<DataDto> windGraph) {
+        // get total power from solar and wind for total power graph
+        List<DataDto> totalPowerGraph = new ArrayList<>();
+        for (int i = 0; i < timeStamps.size(); i++) {
+            double solarPower = solarGraph.get(i).getValue();
+            double windPower = windGraph.get(i).getValue();
+            double totalPower = solarPower + windPower;
+            totalPowerGraph.add(new DataDto(timeStamps.get(i), totalPower));
+        }
+        return totalPowerGraph;
     }
 
 }

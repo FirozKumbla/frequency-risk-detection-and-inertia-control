@@ -98,9 +98,11 @@ public class GraphServcieImpl implements GraphServcie {
                 // Calculate solar energy output
                 List<DataDto> solarGraph = utilMethods.calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
                 List<DataDto> windGraph = utilMethods.calculateWindPower(windSpeeds, config.getWindMillCount(), timeStamps);
+
                 graphData.put(date, Map.of(
                         "solarEnergy", solarGraph,
-                        "windEnergy", windGraph
+                        "windEnergy", windGraph,
+                        "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
                 ));
             }
             return graphData;
