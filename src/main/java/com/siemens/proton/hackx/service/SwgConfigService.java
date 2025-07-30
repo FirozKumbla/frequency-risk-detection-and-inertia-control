@@ -1,6 +1,5 @@
 package com.siemens.proton.hackx.service;
 
-import com.siemens.proton.hackx.model.GridConfigModel;
 import com.siemens.proton.hackx.model.SwitchgearDTO;
 import com.siemens.proton.hackx.response.APIResponse;
 
