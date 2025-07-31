@@ -2,10 +2,9 @@ package com.siemens.proton.hackx.util;
 
 import com.siemens.proton.hackx.model.LocationConfigModel;
 import com.siemens.proton.hackx.response.DataDto;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Component
@@ -15,6 +14,7 @@ public class UtilMethods {
     private static final double TEMP_DERATE_PER_C = 0.005;
     private static final double MAX_UV_INDEX = 12.0;
 
+    @Async
     public List<DataDto> calculateWindPower(List<Double> windSpeeds, int numOfWindTurbines, List<String> timeStamps) {
         Map<String, Map<String, List<DataDto>>> windPowerData = new LinkedHashMap<>();
         // Wind turbine constants
@@ -46,6 +46,7 @@ public class UtilMethods {
         return hourlyList;
     }
 
+    @Async
     public List<DataDto> calculateSolarEnergy(List<Double> hourlyTemps,
                                               List<Double> uvIndex,
                                               int numberOfPanels,
@@ -91,26 +92,4 @@ public class UtilMethods {
         }
         return totalPowerGraph;
     }
-
-    public List<DataDto> getDemandPowerGraph(int days) {
-        // get total demand power - mocked data
-        List<DataDto> totalPowerGraph = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        for (int day = 0; day < days; day++) {
-            for (int hour = 0; hour < 24; hour++) {
-                LocalDateTime timestamp = now.minusDays(days - 1 - day).withHour(hour).withMinute(0).withSecond(0).withNano(0);
-
-                double mockDemandPower = 100 + Math.random() * 50; // Random between 100 and 150
-
-                DataDto dataPoint = new DataDto();
-                dataPoint.setTime(timestamp.format(formatter));
-                dataPoint.setValue(mockDemandPower);
-
-                totalPowerGraph.add(dataPoint);
-            }
-        }
-        return totalPowerGraph;
-    }
-
 }

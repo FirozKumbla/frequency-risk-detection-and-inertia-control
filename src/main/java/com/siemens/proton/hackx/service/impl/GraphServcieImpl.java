@@ -1,11 +1,15 @@
 package com.siemens.proton.hackx.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.siemens.proton.hackx.model.LocationConfigModel;
+import com.siemens.proton.hackx.request.FreqPredictionDTO;
 import com.siemens.proton.hackx.response.APIResponse;
 import com.siemens.proton.hackx.response.DataDto;
 import com.siemens.proton.hackx.service.FrequencyRiskService;
 import com.siemens.proton.hackx.service.GraphServcie;
 import com.siemens.proton.hackx.util.UtilMethods;
+import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -13,6 +17,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -60,10 +65,11 @@ public class GraphServcieImpl implements GraphServcie {
 
         LocationConfigModel config = (LocationConfigModel) locationConfig.getData();
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(weatherUrl).pathSegment(FORECAST_WEATHER_API_URI)
-                .queryParam("q", config.getLatitude().trim() + "," + config.getLongitude().trim())
-                .queryParam("key", WEATHER_API_KEY)
-                .queryParam("days", days);  // Assuming we want a 7-day forecast
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(weatherUrl)
+                .queryParam("latitude", config.getLatitude().trim())
+                .queryParam("longitude", config.getLongitude().trim())
+                .queryParam("hourly", "temperature_2m,wind_speed_10m,direct_radiation");
+        // Assuming we want a 7-day forecast
         // Assuming we want a 7-day forecast
         ResponseEntity<Map<String, Object>> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), new ParameterizedTypeReference<Map<String, Object>>() {
         });
@@ -82,57 +88,106 @@ public class GraphServcieImpl implements GraphServcie {
                 .build();
     }
 
+    @Async
     private Map<String, Map<String, List<DataDto>>> processWeatherDataForGraph(Map<String, Object> weatherData, LocationConfigModel config) {
 
-        Map<String, Object> forecastMap = (Map<String, Object>) weatherData.get("forecast");
-        if (forecastMap != null) {
-            List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecastMap.get("forecastday");
-            Map<String, Map<String, List<DataDto>>> graphData = new LinkedHashMap<>();
+        Map<String, Object> forecastMap = (Map<String, Object>) weatherData.get("hourly");
 
-            for (Map<String, Object> day : forecastDays) {
-                String date = (String) day.get("date");
+        return Map.of("CurrentDay", processForeCastDataForADay(forecastMap, config));
 
-                List<Double> hourlyTemps = new ArrayList<>();
-                List<Double> uvIndex = new ArrayList<>();
-                List<String> timeStamps = new ArrayList<>();
-                List<Double> windSpeeds = new ArrayList<>();
+//        if (forecastMap != null) {
+//            List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecastMap.get("forecastday");
+//            Map<String, Map<String, List<DataDto>>> graphData = new LinkedHashMap<>();
+//
+//            for (Map<String, Object> day : forecastDays) {
+//                String date = (String) day.get("date");
+//
+//                List<Map<String, Object>> hourlyData = (List<Map<String, Object>>) day.get("hour");
+//                List<Double> hourlyTemps = new ArrayList<>();
+//                List<Double> uvIndex = new ArrayList<>();
+//                List<String> timeStamps = new ArrayList<>();
+//                List<Double> windSpeeds = new ArrayList<>();
+//
+//                for (Map<String, Object> hour : hourlyData) {
+//                    hourlyTemps.add((Double) hour.get("temp_c"));
+//                    uvIndex.add(Double.parseDouble(hour.get("uv").toString()));
+//                    timeStamps.add((String) hour.get("time"));
+//                    windSpeeds.add(Double.parseDouble(hour.get("wind_kph").toString()));
+//                }
+//
+//                List<DataDto> solarGraph = utilMethods.calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
+//                List<DataDto> windGraph = utilMethods.calculateWindPower(windSpeeds, config.getWindMillCount(), timeStamps);
+//
+//                graphData.put(date, Map.of(
+//                        "solarEnergy", solarGraph,
+//                        "windEnergy", windGraph,
+//                        "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
+//                ));
+//            }
+//            return graphData;
+//        }
+    }
 
-                // Assuming the hourly data is available in the "hour" key
-                List<Map<String, Object>> hourlyData = (List<Map<String, Object>>) day.get("hour");
-                for (Map<String, Object> hour : hourlyData) {
-                    hourlyTemps.add((Double) hour.get("temp_c"));
-                    uvIndex.add(Double.valueOf(hour.get("uv").toString()));
-                    timeStamps.add((String) hour.get("time"));
-                    windSpeeds.add(Double.valueOf(hour.get("wind_kph").toString()));
-                }
+    private Map<String, List<DataDto>> processForeCastDataForADay(Map<String, Object> forecastMap, LocationConfigModel config) {
 
-                // Calculate solar energy output
-                List<DataDto> solarGraph = utilMethods.calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
-                List<DataDto> windGraph = utilMethods.calculateWindPower(windSpeeds, config.getWindMillCount(), timeStamps);
+        List<String> timeStamps = (List<String>) forecastMap.get("time");
+        List<Double> windSpeeds = (List<Double>) forecastMap.get("temperature_2m");
+        List<Double> hourlyTemps = (List<Double>) forecastMap.get("wind_speed_10m");
+        List<Double> uvIndex = (List<Double>) forecastMap.get("direct_radiation");
 
-                graphData.put(date, Map.of(
-                        "solarEnergy", solarGraph,
-                        "windEnergy", windGraph,
-                        "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
-                ));
+        List<DataDto> solarGraph = utilMethods.calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
+        List<DataDto> windGraph = utilMethods.calculateWindPower(windSpeeds, config.getWindMillCount(), timeStamps);
 
-                System.out.println(getPredication(graphData));
+        return Map.of(
+                "solarEnergy", solarGraph,
+                "windEnergy", windGraph,
+                "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
+        );
+    }
 
-            }
-            return graphData;
+    private List<FreqPredictionDTO> processPredictedData(String jsonStr) {
+        // Assuming jsonStr is a JSON string that needs to be parsed into a List of FreqPredictionDTO
+        // For simplicity, let's assume we have a method to parse this JSON string into the required format
+        Map<String, Object> predictedData = new HashMap<>();
+        List<FreqPredictionDTO> list = new LinkedList<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            predictedData = objectMapper.readValue(jsonStr, Map.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
 
-        return Collections.emptyMap();
+        if (predictedData != null && predictedData.containsKey("choices") ){
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) predictedData.get("choices");
+            if (!choices.isEmpty()) {
+                Map<String, Object> firstChoice = choices.get(0);
+                Map<String, Object> content = (Map<String, Object>) firstChoice.get("message");
+                try {
+                   String freqPredictionDTOString = (String) content.get("content");
+                    JSONArray jsonArray = new JSONArray(freqPredictionDTOString);
+                    System.out.println(jsonArray);
+
+                    // convert JSONArray to List<FreqPredictionDTO>
+                    list = objectMapper.readValue(jsonArray.toString(), objectMapper.getTypeFactory().constructCollectionType(List.class, FreqPredictionDTO.class));
+
+                }catch (Exception e){
+                    System.out.println("Error parsing content: " + e.getMessage());
+                }
+            }
+        }
+        return list;
     }
 
 
-    public String getPredication(Map<String, Map<String, List<DataDto>>> graphData) {
+    @Async
+    @Override
+    public APIResponse getPredication(Map<String, Map<String, List<DataDto>>> graphData) {
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", "llama-3.1-8b-instant");
         requestBody.put("messages", List.of(
                // Map.of("role", "system", "content", "You are a helpful assistant that provides energy predictions based on solar and wind data."),
-                Map.of("role", "user", "content", "Given this input, predict frequency dips, RoCoF, grid health and inertia need and provide the response in the given List of FreqPredictionDTO class public class FreqPredictionDTO { private String timestamp; private double predictedFreq; private double rocOfFreq; private String gridHealth; private boolean syntheticInertiaRequired; private boolean triggerControlCommand; } format without any additional text: " + graphData)
+                Map.of("role", "user", "content", "Given this input, predict frequency dips, RoCoF, grid health and inertia need and provide the response in the given List of FreqPredictionDTO class public class FreqPredictionDTO { private String timestamp; private double predictedFreq; private double rocOfFreq; private String gridHealth; private boolean syntheticInertiaRequired; private boolean triggerControlCommand; } format without any additional text and also remove the given input from the response keep only resulted output: " + graphData)
         ));
 
         try {
@@ -147,7 +202,7 @@ public class GraphServcieImpl implements GraphServcie {
         }});
         ResponseEntity<String> predectedResponse = restTemplate.exchange(gorkUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<String>() {
         });
-        return predectedResponse.getBody();
+        return APIResponse.builder().status(200).data(processPredictedData(predectedResponse.getBody())).build();
     }
 
     private void disableSSLVerification() throws Exception {

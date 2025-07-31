@@ -22,8 +22,6 @@ public class DataLoaderClass implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        System.out.println("ENV GROQ_API_KEY = " + System.getenv("GROQ_API_KEY"));
-
         List<LocationConfigModel> locationList = List.of(LocationConfigModel.builder()
                         .locationName("Location A")
                         .latitude("12.9716")
