@@ -29,4 +29,4 @@ weather:
 
 gork:
   url: https://api.groq.com/openai/v1/chat/completions
-  key: ${GROQ_API_KEY}
+  key: ${GROQ_API_KEY:default-fallback-key}
