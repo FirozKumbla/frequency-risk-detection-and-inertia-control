@@ -43,4 +43,10 @@ public class SwgConfigController {
         return ResponseEntity.ok(swgConfigService.getAllSwitchgear());
     }
 
+    @GetMapping("/swg/loc/{id}")
+    public ResponseEntity<APIResponse> getAllGridConfigurations(@PathVariable Integer id) {
+        // This method will fetch all swg configurations based on location ID.
+        return ResponseEntity.ok(swgConfigService.getAllSwitchgearByLocation(id));
+    }
+
 }

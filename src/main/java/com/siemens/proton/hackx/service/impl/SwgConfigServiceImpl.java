@@ -54,6 +54,26 @@ public class SwgConfigServiceImpl implements SwgConfigService {
     }
 
     @Override
+    public APIResponse getAllSwitchgearByLocation(Integer id) {
+        List<SwitchgearDTO> swgConfigs = swgConfigRepository.findAll();
+        List<SwitchgearDTO> swgConfigsByLoc = swgConfigs.stream()
+                .filter(swg -> swg.getLocationId() != null && swg.getLocationId().equals(id))
+                .toList();
+        if(!swgConfigsByLoc.isEmpty()){
+            return APIResponse.builder()
+                    .status(200)
+                    .message("All grid configurations for location " + id + " retrieved successfully")
+                    .data(swgConfigsByLoc)
+                    .build();
+        } else {
+            return APIResponse.builder()
+                    .status(404)
+                    .message("No switchgear configurations found for location with id: " + id)
+                    .build();
+        }
+    }
+
+    @Override
     public APIResponse updateSwgConfiguration(SwitchgearDTO switchgearDTO) {
         try {
             if (switchgearDTO.getSwgId() == null || !swgConfigRepository.existsById(switchgearDTO.getSwgId())) {
