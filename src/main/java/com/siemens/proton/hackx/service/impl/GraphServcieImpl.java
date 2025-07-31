@@ -78,7 +78,7 @@ public class GraphServcieImpl implements GraphServcie {
             Map<String, Object> weatherData = response.getBody();
 
             // Process the weather data as needed for graphing
-            Map<String, Map<String, List<DataDto>>> data = processWeatherDataForGraph(weatherData, config);
+            Map<String, Map<String, List<DataDto>>> data = processWeatherDataForGraph(weatherData, config, days);
 
             return APIResponse.builder().status(response.getStatusCode().value()).data(data).build();
         }
@@ -89,9 +89,11 @@ public class GraphServcieImpl implements GraphServcie {
     }
 
     @Async
-    private Map<String, Map<String, List<DataDto>>> processWeatherDataForGraph(Map<String, Object> weatherData, LocationConfigModel config) {
+    private Map<String, Map<String, List<DataDto>>> processWeatherDataForGraph(Map<String, Object> weatherData, LocationConfigModel config, int days) {
 
         Map<String, Object> forecastMap = (Map<String, Object>) weatherData.get("hourly");
+
+
 
         return Map.of("CurrentDay", processForeCastDataForADay(forecastMap, config));
 
@@ -141,6 +143,7 @@ public class GraphServcieImpl implements GraphServcie {
         return Map.of(
                 "solarEnergy", solarGraph,
                 "windEnergy", windGraph,
+                "demandEnergy", utilMethods.getDemandPowerGraph(1),
                 "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
         );
     }
