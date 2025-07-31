@@ -2,6 +2,7 @@ package com.siemens.proton.hackx.util;
 
 import com.siemens.proton.hackx.model.LocationConfigModel;
 import com.siemens.proton.hackx.response.DataDto;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -13,6 +14,7 @@ public class UtilMethods {
     private static final double TEMP_DERATE_PER_C = 0.005;
     private static final double MAX_UV_INDEX = 12.0;
 
+    @Async
     public List<DataDto> calculateWindPower(List<Double> windSpeeds, int numOfWindTurbines, List<String> timeStamps) {
         Map<String, Map<String, List<DataDto>>> windPowerData = new LinkedHashMap<>();
         // Wind turbine constants
@@ -44,6 +46,7 @@ public class UtilMethods {
         return hourlyList;
     }
 
+    @Async
     public List<DataDto> calculateSolarEnergy(List<Double> hourlyTemps,
                                               List<Double> uvIndex,
                                               int numberOfPanels,
@@ -89,5 +92,4 @@ public class UtilMethods {
         }
         return totalPowerGraph;
     }
-
 }
