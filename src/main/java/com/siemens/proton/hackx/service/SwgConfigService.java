@@ -7,5 +7,6 @@ public interface SwgConfigService {
     APIResponse createSwitchgear(SwitchgearDTO switchgearDTO);
     APIResponse getSwitchgearById(Integer id);
     APIResponse getAllSwitchgear();
+    APIResponse getAllSwitchgearByLocation(Integer id);
     APIResponse updateSwgConfiguration(SwitchgearDTO switchgearDTO);
 }
