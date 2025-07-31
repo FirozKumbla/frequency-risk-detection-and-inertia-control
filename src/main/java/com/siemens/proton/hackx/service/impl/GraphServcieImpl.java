@@ -129,7 +129,7 @@ public class GraphServcieImpl implements GraphServcie {
     public String getPredication(Map<String, Map<String, List<DataDto>>> graphData) {
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "llama-3.3-70b-versatile");
+        requestBody.put("model", "llama-3.1-8b-instant");
         requestBody.put("messages", List.of(
                // Map.of("role", "system", "content", "You are a helpful assistant that provides energy predictions based on solar and wind data."),
                 Map.of("role", "user", "content", "Given this input, predict frequency dips, RoCoF, grid health and inertia need and provide the response in the given List of FreqPredictionDTO class public class FreqPredictionDTO { private String timestamp; private double predictedFreq; private double rocOfFreq; private String gridHealth; private boolean syntheticInertiaRequired; private boolean triggerControlCommand; } format without any additional text: " + graphData)
