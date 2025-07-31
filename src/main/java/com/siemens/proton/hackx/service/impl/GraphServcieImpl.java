@@ -27,9 +27,10 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.security.cert.X509Certificate;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-
-import static com.siemens.proton.hackx.constant.ApplicationConstant.*;
+import java.util.stream.IntStream;
 
 @Service
 public class GraphServcieImpl implements GraphServcie {
@@ -65,69 +66,61 @@ public class GraphServcieImpl implements GraphServcie {
 
         LocationConfigModel config = (LocationConfigModel) locationConfig.getData();
 
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(weatherUrl)
-                .queryParam("latitude", config.getLatitude().trim())
-                .queryParam("longitude", config.getLongitude().trim())
-                .queryParam("hourly", "temperature_2m,wind_speed_10m,direct_radiation");
-        // Assuming we want a 7-day forecast
-        // Assuming we want a 7-day forecast
-        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), new ParameterizedTypeReference<Map<String, Object>>() {
-        });
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            Map<String, Object> weatherData = response.getBody();
+        List<String> dates = IntStream.range(0, days)
+                .mapToObj(i -> today.plusDays(i).format(formatter))
+                .toList();
 
-            // Process the weather data as needed for graphing
-            Map<String, Map<String, List<DataDto>>> data = processWeatherDataForGraph(weatherData, config, days);
+        Map<String, Map<String, List<DataDto>>> fullDateDataMap = new LinkedHashMap<>();
 
-            return APIResponse.builder().status(response.getStatusCode().value()).data(data).build();
+        for (String date : dates) {
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(weatherUrl)
+                    .queryParam("latitude", config.getLatitude().trim())
+                    .queryParam("longitude", config.getLongitude().trim())
+                    .queryParam("start_date", date)
+                    .queryParam("end_date", date)
+                    .queryParam("hourly", "temperature_2m,wind_speed_10m,direct_radiation");
+
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    builder.toUriString(),
+                    HttpMethod.GET,
+                    new HttpEntity<>(new HttpHeaders()),
+                    new ParameterizedTypeReference<>() {}
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Map<String, Object> weatherData = response.getBody();
+                fullDateDataMap.putAll(processWeatherDataForGraph(weatherData, config, date));
+            }
         }
+
+        if (!fullDateDataMap.isEmpty()) {
+            return APIResponse.builder()
+                    .status(200)
+                    .message("Weather data fetched successfully")
+                    .data(fullDateDataMap)
+                    .build();
+        }
+
         return APIResponse.builder()
-                .status(response.getStatusCode().value())
-                .message("Failed to fetch weather data")
+                .status(500)
+                .message("Failed to fetch weather data for all days")
                 .build();
+
     }
 
     @Async
-    private Map<String, Map<String, List<DataDto>>> processWeatherDataForGraph(Map<String, Object> weatherData, LocationConfigModel config, int days) {
+    private Map<String, Map<String, List<DataDto>>> processWeatherDataForGraph(Map<String, Object> weatherData, LocationConfigModel config, String date) {
 
         Map<String, Object> forecastMap = (Map<String, Object>) weatherData.get("hourly");
 
 
+        Map<String, Map<String, List<DataDto>>> dateDataMap = new LinkedHashMap<>();
+        dateDataMap.put(date, processForeCastDataForADay(forecastMap, config));
 
-        return Map.of("CurrentDay", processForeCastDataForADay(forecastMap, config));
-
-//        if (forecastMap != null) {
-//            List<Map<String, Object>> forecastDays = (List<Map<String, Object>>) forecastMap.get("forecastday");
-//            Map<String, Map<String, List<DataDto>>> graphData = new LinkedHashMap<>();
-//
-//            for (Map<String, Object> day : forecastDays) {
-//                String date = (String) day.get("date");
-//
-//                List<Map<String, Object>> hourlyData = (List<Map<String, Object>>) day.get("hour");
-//                List<Double> hourlyTemps = new ArrayList<>();
-//                List<Double> uvIndex = new ArrayList<>();
-//                List<String> timeStamps = new ArrayList<>();
-//                List<Double> windSpeeds = new ArrayList<>();
-//
-//                for (Map<String, Object> hour : hourlyData) {
-//                    hourlyTemps.add((Double) hour.get("temp_c"));
-//                    uvIndex.add(Double.parseDouble(hour.get("uv").toString()));
-//                    timeStamps.add((String) hour.get("time"));
-//                    windSpeeds.add(Double.parseDouble(hour.get("wind_kph").toString()));
-//                }
-//
-//                List<DataDto> solarGraph = utilMethods.calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
-//                List<DataDto> windGraph = utilMethods.calculateWindPower(windSpeeds, config.getWindMillCount(), timeStamps);
-//
-//                graphData.put(date, Map.of(
-//                        "solarEnergy", solarGraph,
-//                        "windEnergy", windGraph,
-//                        "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
-//                ));
-//            }
-//            return graphData;
-//        }
+        return dateDataMap;
     }
 
     private Map<String, List<DataDto>> processForeCastDataForADay(Map<String, Object> forecastMap, LocationConfigModel config) {
@@ -140,12 +133,13 @@ public class GraphServcieImpl implements GraphServcie {
         List<DataDto> solarGraph = utilMethods.calculateSolarEnergy(hourlyTemps, uvIndex, config.getSolarPanelCount(), timeStamps);
         List<DataDto> windGraph = utilMethods.calculateWindPower(windSpeeds, config.getWindMillCount(), timeStamps);
 
-        return Map.of(
-                "solarEnergy", solarGraph,
-                "windEnergy", windGraph,
-                "demandEnergy", utilMethods.getDemandPowerGraph(1),
-                "totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph)
-        );
+        Map<String, List<DataDto>> graphData = new LinkedHashMap<>();
+        graphData.put("solarEnergy", solarGraph);
+        graphData.put("windEnergy", windGraph);
+        graphData.put("totalEnergy", utilMethods.getTotalPowerGraph(timeStamps, solarGraph, windGraph));
+        graphData.put("demandEnergy", utilMethods.getDemandPowerGraph(1));
+
+        return graphData;
     }
 
     private List<FreqPredictionDTO> processPredictedData(String jsonStr) {
