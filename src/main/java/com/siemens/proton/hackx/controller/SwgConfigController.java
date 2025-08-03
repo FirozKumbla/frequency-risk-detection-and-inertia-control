@@ -1,6 +1,8 @@
 package com.siemens.proton.hackx.controller;
 
+import com.siemens.proton.hackx.model.FeederTypeMaster;
 import com.siemens.proton.hackx.model.SwitchgearDTO;
+import com.siemens.proton.hackx.model.SwitchgearTypeMaster;
 import com.siemens.proton.hackx.response.APIResponse;
 import com.siemens.proton.hackx.service.SwgConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,13 +53,12 @@ public class SwgConfigController {
 
     @GetMapping("/swg/type")
     public ResponseEntity<APIResponse> getSwgTypeConfigurations() {
-        // This method will fetch all swg configurations.
-        return ResponseEntity.ok(swgConfigService.getAllSwitchgear());
+        return ResponseEntity.ok(APIResponse.builder().data(SwitchgearTypeMaster.builder().id(1).swgType("NXAIR (up to 17.5kV 40kA)").swgName("NXAIR").build()).status(200).message("Success").build());
     }
 
     @GetMapping("/feeder/type")
     public ResponseEntity<APIResponse> getFeederTypeConfigurations() {
         // This method will fetch all swg configurations.
-        return ResponseEntity.ok(swgConfigService.getAllSwitchgear());
+        return ResponseEntity.ok(APIResponse.builder().data(FeederTypeMaster.builder().id(1).feederName("Contactor").feederType("Incomer/Outgoing").swgTypeId(1).build()).status(200).message("Success").build());
     }
 }
