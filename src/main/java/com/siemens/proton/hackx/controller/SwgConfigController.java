@@ -49,4 +49,15 @@ public class SwgConfigController {
         return ResponseEntity.ok(swgConfigService.getAllSwitchgearByLocation(id));
     }
 
+    @GetMapping("/swg/type")
+    public ResponseEntity<APIResponse> getSwgTypeConfigurations() {
+        // This method will fetch all swg configurations.
+        return ResponseEntity.ok(swgConfigService.getAllSwitchgear());
+    }
+
+    @GetMapping("/feeder/type")
+    public ResponseEntity<APIResponse> getFeederTypeConfigurations() {
+        // This method will fetch all swg configurations.
+        return ResponseEntity.ok(swgConfigService.getAllSwitchgear());
+    }
 }
