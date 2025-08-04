@@ -46,8 +46,8 @@ public class UtilMethods {
             DataDto dto = new DataDto();
             dto.setTime(time);
             dto.setValue(Math.round(totalPowerMW * 100.0) / 100.0);
-            dto.setVoltage(Math.round(voltage * 10.0) / 10.0); // 1 decimal
-            dto.setFrequency(gridFrequency);
+            dto.setVoltage((Math.round(voltage * 10.0) / 10.0) / 1000); // 1 decimal in KV
+            //dto.setFrequency(gridFrequency);
             hourlyList.add(dto);
         }
         return hourlyList;
@@ -75,8 +75,8 @@ public class UtilMethods {
 
             dataDto.setTime(time);
             dataDto.setValue(Math.round(totalOutputMW * 100.0) / 100.0);
-            dataDto.setVoltage(panelVoltage * numberOfPanels); // simple: all in series
-            dataDto.setFrequency(gridFrequency);
+            dataDto.setVoltage((panelVoltage * numberOfPanels) / 1000);  // In KV simple: all in series
+            //dataDto.setFrequency(gridFrequency);
             dataDtos.add(dataDto);
         }
         return dataDtos;
