@@ -47,7 +47,6 @@ public class UtilMethods {
             dto.setTime(time);
             dto.setValue(Math.round(totalPowerMW * 100.0) / 100.0);
             dto.setVoltage((Math.round(voltage * 10.0) / 10.0) / 1000); // 1 decimal in KV
-            //dto.setFrequency(gridFrequency);
             hourlyList.add(dto);
         }
         return hourlyList;
@@ -90,8 +89,7 @@ public class UtilMethods {
             double windPower = windGraph.get(i).getValue();
             double totalPower = solarPower + windPower;
             double totalVoltage = solarGraph.get(i).getVoltage() + windGraph.get(i).getVoltage();
-            double totalFrequency = (solarGraph.get(i).getFrequency() + windGraph.get(i).getFrequency()) / 2.0;
-            totalPowerGraph.add(new DataDto(timeStamps.get(i), totalPower, totalVoltage, totalFrequency));
+            totalPowerGraph.add(new DataDto(timeStamps.get(i), totalPower, totalVoltage));
         }
         return totalPowerGraph;
     }
