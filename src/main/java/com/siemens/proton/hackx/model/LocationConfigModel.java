@@ -33,9 +33,9 @@ public class LocationConfigModel {
     private String address;
 
     @Column(name = "wind_mill_count")
-    private Integer windMillCount;
+    private int windMillCount;
 
     @Column(name = "solar_panel_count")
-    private Integer solarPanelCount;
+    private int solarPanelCount;
 
 }

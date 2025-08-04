@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1")
@@ -60,5 +62,13 @@ public class SwgConfigController {
     public ResponseEntity<APIResponse> getFeederTypeConfigurations() {
         // This method will fetch all swg configurations.
         return ResponseEntity.ok(APIResponse.builder().data(FeederTypeMaster.builder().id(1).feederName("Contactor").feederType("Incomer/Outgoing").swgTypeId(1).build()).status(200).message("Success").build());
+    }
+
+    @GetMapping("/default/value")
+    public ResponseEntity<APIResponse> getDefaultValues() {
+        // This method will fetch default values for swg configurations.
+        APIResponse aPIResponse =   APIResponse.builder().status(200).data(Map.of("Solar_Panel_Type", Map.of("RATED_POWER_PER_PANEL", "300.0 W", "TEMP_DERATE_PER_C", 0.005, "MAX_UV_INDEX", 12.0),
+                "Wind_Mill_Type", Map.of("ratedPowerKW", 2000, "cutIn", 3.5, "rated", 13.0, "cutOut", 25.0))).build();
+        return ResponseEntity.ok(aPIResponse);
     }
 }

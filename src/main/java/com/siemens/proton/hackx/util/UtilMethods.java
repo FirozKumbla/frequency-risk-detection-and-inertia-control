@@ -41,7 +41,7 @@ public class UtilMethods {
                 powerPerTurbine = ratedPowerKW;
             }
 
-            double totalPower = powerPerTurbine * numOfWindTurbines;
+            double totalPower = (powerPerTurbine * numOfWindTurbines) / 1000;
             hourlyList.add(new DataDto(time, totalPower));
         }
 
