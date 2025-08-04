@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class DataDto {
     private String time;
     private Double value;
+    private Double voltage;
+    private Double frequency;
 }

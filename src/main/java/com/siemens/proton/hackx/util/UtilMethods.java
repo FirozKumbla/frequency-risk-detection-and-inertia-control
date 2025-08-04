@@ -18,31 +18,38 @@ public class UtilMethods {
 
     @Async
     public List<DataDto> calculateWindPower(List<Double> windSpeeds, int numOfWindTurbines, List<String> timeStamps) {
-        double ratedPowerKW = 2000.0; // 2 MW in kW
-        double cutIn = 3.5;
-        double rated = 13.0;
-        double cutOut = 25.0;
+        double ratedPowerKW = 2000.0;
+        double cutIn = 3.5, rated = 13.0, cutOut = 25.0;
+        double ratedVoltage = 400.0; // V
+        double gridFrequency = 50.0; // Hz
 
         List<DataDto> hourlyList = new ArrayList<>();
-
         for (int i = 0; i < windSpeeds.size(); i++) {
             String time = timeStamps.get(i);
             double windKph = windSpeeds.get(i);
-            double windSpeed = windKph / 3.6; // Convert kph to m/s
+            double windSpeed = windKph / 3.6;
 
             double powerPerTurbineKW;
+            double voltage;
             if (windSpeed < cutIn || windSpeed > cutOut) {
                 powerPerTurbineKW = 0;
+                voltage = 0;
             } else if (windSpeed < rated) {
                 powerPerTurbineKW = ratedPowerKW * Math.pow((windSpeed - cutIn) / (rated - cutIn), 3);
+                voltage = ratedVoltage * (windSpeed / rated); // scale voltage up to rated
             } else {
                 powerPerTurbineKW = ratedPowerKW;
+                voltage = ratedVoltage;
             }
+            double totalPowerMW = (powerPerTurbineKW * numOfWindTurbines) / 1000.0;
 
-            double totalPowerMW = (powerPerTurbineKW * numOfWindTurbines) / 1000.0; // Convert kW to MW
-            hourlyList.add(new DataDto(time, totalPowerMW));
+            DataDto dto = new DataDto();
+            dto.setTime(time);
+            dto.setValue(Math.round(totalPowerMW * 100.0) / 100.0);
+            dto.setVoltage(Math.round(voltage * 10.0) / 10.0); // 1 decimal
+            dto.setFrequency(gridFrequency);
+            hourlyList.add(dto);
         }
-
         return hourlyList;
     }
 
@@ -51,8 +58,10 @@ public class UtilMethods {
                                               List<Double> uvIndex,
                                               int numberOfPanels,
                                               List<String> timeStamps) {
-        List<DataDto> dataDtos = new LinkedList<>();
+        double panelVoltage = 36.0; // V per panel
+        double gridFrequency = 50.0; // Hz
 
+        List<DataDto> dataDtos = new LinkedList<>();
         for (int i = 0; i < hourlyTemps.size(); i++) {
             DataDto dataDto = new DataDto();
             double tempC = hourlyTemps.get(i);
@@ -62,13 +71,14 @@ public class UtilMethods {
             double derateFactor = (tempC <= 25) ? 1.0 : (1 - TEMP_DERATE_PER_C * (tempC - 25));
             double effectivePowerPerPanel = RATED_POWER_PER_PANEL * derateFactor;
             double outputPerPanel = effectivePowerPerPanel * (uv / MAX_UV_INDEX);
-            double totalOutputMW = (outputPerPanel * numberOfPanels) / 1_000_000.0; // Convert W to MW
+            double totalOutputMW = (outputPerPanel * numberOfPanels) / 1_000_000.0;
 
             dataDto.setTime(time);
-            dataDto.setValue(Math.round(totalOutputMW * 100.0) / 100.0); // Round to 2 decimals
+            dataDto.setValue(Math.round(totalOutputMW * 100.0) / 100.0);
+            dataDto.setVoltage(panelVoltage * numberOfPanels); // simple: all in series
+            dataDto.setFrequency(gridFrequency);
             dataDtos.add(dataDto);
         }
-
         return dataDtos;
     }
 
@@ -79,7 +89,9 @@ public class UtilMethods {
             double solarPower = solarGraph.get(i).getValue();
             double windPower = windGraph.get(i).getValue();
             double totalPower = solarPower + windPower;
-            totalPowerGraph.add(new DataDto(timeStamps.get(i), totalPower));
+            double totalVoltage = solarGraph.get(i).getVoltage() + windGraph.get(i).getVoltage();
+            double totalFrequency = (solarGraph.get(i).getFrequency() + windGraph.get(i).getFrequency()) / 2.0;
+            totalPowerGraph.add(new DataDto(timeStamps.get(i), totalPower, totalVoltage, totalFrequency));
         }
         return totalPowerGraph;
     }
